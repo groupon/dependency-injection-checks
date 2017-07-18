@@ -20,23 +20,8 @@ buildscript {
     repositories {
         mavenCentral()
         maven {
-            url "http://nexus-dev.snc1/content/repositories/snapshots/"
-            name "nexus-dev-snapshots"
-        }
-
-        maven {
-            url "http://nexus-dev.snc1/content/repositories/releases/"
-            name "nexus-dev-releases"
-        }
-
-        maven {
             url "https://plugins.gradle.org/m2/"
             name "gradle-plugins repo"
-        }
-
-        dependencies {
-            classpath 'com.groupon.gradle:nexus-publish:2.0.3'
-            classpath 'net.researchgate:gradle-release:2.5.0'
         }
     }
 
@@ -71,18 +56,10 @@ subprojects { project ->
     }
 
     apply plugin: 'java'
-    apply plugin: 'groupon-nexus-publish'
-    apply plugin: 'net.researchgate.release'
     apply from: rootProject.file("${quality_gradle_java_file}")
 
     sourceCompatibility = 1.7
     targetCompatibility = 1.7
-
-    publishing.publications {
-        Main(MavenPublication) {
-            from project.components.java
-        }
-    }
 }
 
 ext.deps = [// Compiler

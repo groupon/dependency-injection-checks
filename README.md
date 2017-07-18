@@ -1,5 +1,8 @@
 ## Dependency Injection usage Checks
 
+<a alt="Build Status" href="https://travis-ci.org/groupon/dependency-injection-checks">
+      <img src="https://travis-ci.org/groupon/dependency-injection-checks.svg?branch=master"/></a>
+
 ### What does it do?
 
 DI checks is an annotation processor used to detect common issues when using dependency injection frameworks that use JSR 330 like [Toothpick](https://github.com/stephanenicolas/toothpick) or [Dagger](https://github.com/google/dagger).
@@ -46,3 +49,7 @@ apt {
 ### Future plans
 
 We will add other useful checks related to dependency injection.
+
+### Credits
+
+ * Stephane Nicolas (https://github.com/stephanenicolas) - helped with code review and advice on the first version of the library.
