@@ -24,7 +24,9 @@ jar_base_dir="config/formatter"
 #   https://github.com/pre-commit/pre-commit/blob/master/pre_commit/staged_files_only.py#L15
 # Basically we just diff the unstaged changes, store the patch, and apply it later.
 # In the future, we should consider migrating to using that library.
-staged_changes_diff=$(mktemp -t format_patch)
+
+# some linux distributions need mktemp to have a file pattern that uses at leas 3 Xs in the file suffix
+staged_changes_diff=$(mktemp -t format_patchXXX)
 git diff --ignore-submodules --binary --exit-code --no-color > $staged_changes_diff
 if [ $? -eq 1 ]; then 
     echo "Found unstaged changes, storing in ${staged_changes_diff}"
@@ -42,9 +44,7 @@ formatter_args="--replace"
 
 # filter=ACMR shows only added, changed, modified, or renamed files.
 # Get only java files and prepend the root directory to make the paths absolute.
-changed_java_files=($(git diff --cached --name-only --diff-filter=ACMR \
-    | grep ".*java$" \
-    | sed "s:^:${root_dir}/:"))
+changed_java_files=$(git diff --cached --name-only --diff-filter=ACMR | grep ".*java$" | sed "s:^:${root_dir}/:")
 # If we have changed java files, format them!
 if [ ${#changed_java_files[@]} -gt 0 ]; then
     # Do the formatting, stage the changes, and print out which files were changed.
