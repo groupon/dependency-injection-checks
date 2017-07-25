@@ -2,6 +2,12 @@
 
 <a alt="Build Status" href="https://travis-ci.org/groupon/dependency-injection-checks">
       <img src="https://travis-ci.org/groupon/dependency-injection-checks.svg?branch=master"/></a>
+<br />
+<a alt="License" href="https://raw.githubusercontent.com/groupon/dependency-injection-checks/master/LICENSE">
+      <img src="http://img.shields.io/:license-apache-blue.svg"/></a>
+<br/>
+<a alt="Maven Central" href="http://search.maven.org/#search%7Cga%7C1%7Ccom.groupon.android.dichecks">
+      <img src="https://img.shields.io/maven-central/v/com.groupon.android.dichecks/compiler.svg?maxAge=2592000"/></a>
 
 ### What does it do?
 
