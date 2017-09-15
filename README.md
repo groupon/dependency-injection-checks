@@ -32,7 +32,7 @@ Just add the following line in your module's gradle file to get started:
 ```groovy
 dependencies {
     ...
-    apt "com.groupon.android.dichecks:compiler:x.y.z" <--- Add this to your dependencies.
+    apt "com.groupon.android.dichecks:compiler:1.0.2" <--- Add this to your dependencies.
     ...
 }
 ```
