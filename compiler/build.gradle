@@ -18,14 +18,15 @@ apply plugin: 'com.github.hierynomus.license'
 apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
 
 dependencies {
-  compile deps.autoservice
-  compile deps.injection
-  compile deps.annotations
+  compileOnly deps.autoservice
+  compileOnly deps.injection
+  compileOnly deps.annotations
 
   // Test Dependencies
   testCompile deps.junit
   testCompile deps.truth
   testCompile deps.compiletesting
+  testCompile deps.injection
   // From https://github.com/google/compile-testing/issues/28
   testCompile files(org.gradle.internal.jvm.Jvm.current().getToolsJar())
 }
