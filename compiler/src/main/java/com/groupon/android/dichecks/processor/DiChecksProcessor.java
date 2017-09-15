@@ -21,7 +21,6 @@ import static com.groupon.android.dichecks.processor.CompilerOptions.DUPLICATE_I
 import static com.groupon.android.dichecks.processor.CompilerOptions.FORBIDDEN_CLASSES_CLASSLIST;
 import static com.groupon.android.dichecks.processor.CompilerOptions.FORBIDDEN_CLASSES_ENABLED;
 import static com.groupon.android.dichecks.processor.CompilerOptions.FORBIDDEN_CLASSES_FAIL_ON_ERROR;
-import static javax.lang.model.SourceVersion.RELEASE_7;
 
 import com.google.auto.service.AutoService;
 import com.groupon.android.dichecks.checks.common.DICheck;
@@ -36,8 +35,8 @@ import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedOptions;
-import javax.annotation.processing.SupportedSourceVersion;
 import javax.inject.Inject;
+import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -56,7 +55,6 @@ import javax.tools.Diagnostic;
   }
 )
 @SupportedAnnotationTypes(value = {DiChecksProcessor.INJECT_ANNOTATION_CLASSNAME})
-@SupportedSourceVersion(RELEASE_7)
 public class DiChecksProcessor extends AbstractProcessor {
 
   public static final String CLASS_LIST_SEPARATOR = ",";
@@ -68,6 +66,11 @@ public class DiChecksProcessor extends AbstractProcessor {
   private boolean forbiddenClassesEnabled = true;
   private boolean forbiddenClassesFailOnError = true;
   private String[] forbiddenClassesClasses;
+
+  @Override
+  public SourceVersion getSupportedSourceVersion() {
+    return javax.lang.model.SourceVersion.latest();
+  }
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {

@@ -1,5 +1,5 @@
-#from https://gist.github.com/tmelz/76e655a3d8f2878fc9a4
 #!/bin/bash
+#from https://gist.github.com/tmelz/76e655a3d8f2878fc9a4
 # Auto format changed java files using google-java-format.
 # To install, copy this file into $repo/.git/hooks and remove the .sh extension.
 # Download the google-java-format JAR from

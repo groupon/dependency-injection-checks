@@ -1,7 +1,11 @@
 language: java
-
 jdk:
   - oraclejdk8
+
+env:
+  global:
+  - secure: ikkcAcV12B37XGTbP2ET+zM6lyS3hC/qe3j2VeFE8+I7QPtsnMP1JWXOY2jVZV6uUDdWwwUGP9e/UREcUd1+x2JAd4/uA7MJOmhVNTbh/l6BM8SCgm2eDxh1H3xlzl5S4zoO9iXIMIei2/fl3LxY0qgx5eWdM7FNr8ELAE7IAdb3EMuHwwXqLrmZ6lGHwez6FW2kYQE630yWeuVXSyuRcAE6WB6oH+lqPw03J7kuK1El2XrI5O24akR38TlVRVtJ7iFIXQ8aS4ubs3jJBYqWAu63r8chU3wbiwzOTBw0ZB7wYgT5DTeY3IOv/s3F//KuWsImv9rf1648HViud3GDvmfdx4uijhLIl2w7MtG+3Nz9Vh44ik0xW6HtJC3q7rrjhz4A+Gbth6DnubLRt5+1wAWISzzonA3q/zYBMrBccN2iL1YX8j55gDUSqQIUrLopXkm6APZ37X4JnX5cTo1pPqICb3NRJVE5sHp80WD72mlfw473rBzygb1lLHl0026frVL3YK7ZKc/HNwnGVdryo+sRflqp8adNb9X97oqAFzCc4SQMd7wufuRYJU89kpQUaQUS22JubEET9Pu6a8GPMNYezA2jYh5Ux4NaCVYsA30YfATJ1FFhy4nsP+eQLwABFfizzBmA5gOISwjZxuzzvQx2VHUpt3ogJHkJrnuQ+CY=
+  - secure: JxtZYeZHrziNTeEHrNMP2eRorxmMV3X85tbaigiuMkKs5b8/2SJDng75hPYlzadAMIho9B7fX6b0tahnfqnIRIcfy8kAEpDYCXVQLZ31KF3aBelCzDdlDc8zSq3J3XjpbqbnzccQedQrswFpqLi0cfti7/jQjdMMq0R50pKLxdprmxkmeJQWRP09C9hVr/cwJu6WPMMMRIpeFaUDLI43XNNlFfUG1QB6vhMzWsDMOr6avgG+oB0RaQZEUhv7FVtcfZdOU3zLrBCRSUxXgkNiBhW/fnzsLf+sHdBAcvhTf2X96QCS7jMHbEpBXwcdp7dtKyxgOMj13HIxL8A+5t5TUEuHXalAakT8+DEBjEACR7WSX/Qc2Z012bpP6GGeXfcdKCj6b42HF8G+swt7F2Hn4HSujWpkLVRGjq4AVa0cAfmuU4/xp3HAFXQqkQr1ISFZTuXMq5oEEjmvqpw6yuoXuO4P/LU/2hl54gCxIx8mlc/0QWQt8I8i9gvWd7x6qIzeEa/3azTflR49Ed4TqCcmkE4dPLiXS8XZmXAFZT32ql7UILVDW1MVOKq59qieQinvXUBdczIa8nsut1p5moxNTj+tRA2Bx29HnYXWqBrTaFoicDKqzRxAc+vIFDJUi9nhnpmATU/5X4wZywxMmIACRxv7ar4x9a9MCP2un8T0WXk=
 
 branches:
   except:
@@ -19,6 +23,9 @@ cache:
 script:
   - ./gradlew clean build
 
+before_install:
+  - chmod +x .buildscript/deploy_snapshot.sh
+
 after_success:
 #  - ./gradlew jacocoTestReport coveralls
-#  - .buildscript/deploy_snapshot.sh
+  - .buildscript/deploy_snapshot.sh
