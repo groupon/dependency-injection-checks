@@ -23,6 +23,9 @@ cache:
 script:
   - ./gradlew clean build
 
+before_install:
+  - chmod +x .buildscript/deploy_snapshot.sh
+
 after_success:
 #  - ./gradlew jacocoTestReport coveralls
   - .buildscript/deploy_snapshot.sh
