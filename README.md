@@ -40,12 +40,19 @@ dependencies {
 You have fine grained control over checks with this pattern:
 
 ```groovy
-apt {
-    arguments {
-        ...
-        'com.groupon.android.dichecks.duplicateCheck.failOnError' 'true' <--- Issue warnings instead of compiler errors.
-        'com.groupon.android.dichecks.duplicateCheck.enabled' 'true'     <--- Enable or disable check completely.
-        ...
+
+android {
+    defaultConfig {
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = [
+                    ...
+                    'com.groupon.android.dichecks.duplicateCheck.failOnError': 'false', <--- Issue warnings instead of compiler errors.
+                    'com.groupon.android.dichecks.duplicateCheck.enabled': 'true',     <--- Enable or disable check completely.
+                    ...
+                ]
+            }
+        }
     }
 }
 ```
