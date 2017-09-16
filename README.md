@@ -7,7 +7,7 @@
       <img src="http://img.shields.io/:license-apache-blue.svg"/></a>
 <br/>
 <a alt="Maven Central" href="http://search.maven.org/#search%7Cga%7C1%7Ccom.groupon.android.dichecks">
-      <img src="https://img.shields.io/maven-central/v/com.groupon.android.dichecks/compiler.svg?maxAge=2592000"/></a>
+      <img src="https://img.shields.io/maven-central/v/com.groupon.android.dichecks/compiler.svg?maxAge=2591000"/></a>
 
 ### What does it do?
 
