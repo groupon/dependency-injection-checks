@@ -29,10 +29,16 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /** Use this to detect duplicate injections in the class hierarchy. */
 public class DuplicateInjectionInHierarchyCheck implements DICheck {
@@ -40,6 +46,7 @@ public class DuplicateInjectionInHierarchyCheck implements DICheck {
   private Map<InjectionDefinition, Set<Element>> mapInjectionDefinitionToInjectionLocations =
       new HashMap<>();
 
+  private final Elements elementUtils;
   private final Types typeUtils;
 
   private boolean failOnError;
@@ -48,12 +55,20 @@ public class DuplicateInjectionInHierarchyCheck implements DICheck {
       ProcessingEnvironment processingEnv, boolean failOnError) {
     this.failOnError = failOnError;
     typeUtils = processingEnv.getTypeUtils();
+    elementUtils = processingEnv.getElementUtils();
   }
 
   @Override
   public void addInjectedElements(Set<? extends Element> injectedElements) {
     for (Element injectedElement : injectedElements) {
-      addInjectionDefinition(new InjectionDefinition(injectedElement), injectedElement);
+      if (isProvider(injectedElement)) {
+        final TypeElement typeElement = getKindParameter(injectedElement);
+        if (typeElement != null) {
+          addInjectionDefinition(new InjectionDefinition(typeElement), injectedElement);
+        }
+      } else {
+        addInjectionDefinition(new InjectionDefinition(injectedElement), injectedElement);
+      }
     }
   }
 
@@ -124,6 +139,43 @@ public class DuplicateInjectionInHierarchyCheck implements DICheck {
 
   private TypeElement findSuperClass(TypeElement typeElement) {
     return (TypeElement) typeUtils.asElement(typeElement.getSuperclass());
+  }
+
+  private boolean isSubType(TypeMirror typeMirror, String typeName) {
+    return typeUtils.isSubtype(
+        typeUtils.erasure(typeMirror),
+        typeUtils.erasure(elementUtils.getTypeElement(typeName).asType()));
+  }
+
+  private boolean isProvider(Element element) {
+    return isSubType(element.asType(), Provider.class.getCanonicalName());
+  }
+
+  /**
+   * Determine and return the type of the element.
+   *
+   * <ul>
+   *   <li>Return erasure type Foo for, Lazy&lt;Foo&gt;.
+   *   <li>Return FooProvider if no erasure type.
+   *   <li>Return null, if we are unable to determine any type/kind of element.
+   * </ul>
+   *
+   * @param element
+   * @return the TypeElement for declared type.
+   */
+  @Nullable
+  private TypeElement getKindParameter(Element element) {
+    final TypeMirror type = element.asType();
+    if (type.getKind() == TypeKind.DECLARED) {
+      final List<? extends TypeMirror> typeMirrors =
+          ((DeclaredType) element.asType()).getTypeArguments();
+      if (!typeMirrors.isEmpty()) {
+        return (TypeElement) typeUtils.asElement(typeUtils.erasure(typeMirrors.get(0)));
+      } else {
+        return (TypeElement) typeUtils.asElement(element.asType());
+      }
+    }
+    return null;
   }
 
   /** Identifies an injection in the source code. */
