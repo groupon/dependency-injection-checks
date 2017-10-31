@@ -31,6 +31,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.inject.Named;
 import javax.inject.Provider;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
@@ -43,6 +44,7 @@ import org.jetbrains.annotations.Nullable;
 /** Use this to detect duplicate injections in the class hierarchy. */
 public class DuplicateInjectionInHierarchyCheck implements DICheck {
 
+  private static final String LAZY_CLASS_NAME = "Lazy";
   private Map<InjectionDefinition, Set<Element>> mapInjectionDefinitionToInjectionLocations =
       new HashMap<>();
 
@@ -61,7 +63,7 @@ public class DuplicateInjectionInHierarchyCheck implements DICheck {
   @Override
   public void addInjectedElements(Set<? extends Element> injectedElements) {
     for (Element injectedElement : injectedElements) {
-      if (isProvider(injectedElement)) {
+      if (isProvider(injectedElement) || isLazy(injectedElement)) {
         final TypeElement typeElement = getKindParameter(injectedElement);
         if (typeElement != null) {
           addInjectionDefinition(new InjectionDefinition(typeElement), injectedElement);
@@ -141,14 +143,30 @@ public class DuplicateInjectionInHierarchyCheck implements DICheck {
     return (TypeElement) typeUtils.asElement(typeElement.getSuperclass());
   }
 
-  private boolean isSubType(TypeMirror typeMirror, String typeName) {
-    return typeUtils.isSubtype(
-        typeUtils.erasure(typeMirror),
-        typeUtils.erasure(elementUtils.getTypeElement(typeName).asType()));
+  /**
+   * Tests whether one type is a subtype of another. Any type is considered to be a subtype of
+   * itself.
+   *
+   * @param typeMirror1 the first type
+   * @param typeMirror2 the second type
+   * @return {@code true} if and only if the first type is a subtype of the second
+   */
+  private boolean isSubType(TypeMirror typeMirror1, TypeMirror typeMirror2) {
+    return typeUtils.isSubtype(typeUtils.erasure(typeMirror1), typeUtils.erasure(typeMirror2));
   }
 
   private boolean isProvider(Element element) {
-    return isSubType(element.asType(), Provider.class.getCanonicalName());
+    return isSubType(
+        element.asType(), elementUtils.getTypeElement(Provider.class.getCanonicalName()).asType());
+  }
+
+  private boolean isLazy(Element element) {
+    final TypeMirror type = element.asType();
+    if (type.getKind() == TypeKind.DECLARED) {
+      final Name className = ((DeclaredType) type).asElement().getSimpleName();
+      return LAZY_CLASS_NAME.equals(className.toString());
+    }
+    return false;
   }
 
   /**
@@ -166,10 +184,9 @@ public class DuplicateInjectionInHierarchyCheck implements DICheck {
   @Nullable
   private TypeElement getKindParameter(Element element) {
     final TypeMirror type = element.asType();
-    if (type.getKind() == TypeKind.DECLARED) {
-      final List<? extends TypeMirror> typeMirrors =
-          ((DeclaredType) element.asType()).getTypeArguments();
-      if (!typeMirrors.isEmpty()) {
+    if (TypeKind.DECLARED == type.getKind()) {
+      final List<? extends TypeMirror> typeMirrors = ((DeclaredType) type).getTypeArguments();
+      if (typeMirrors.size() == 1) {
         return (TypeElement) typeUtils.asElement(typeUtils.erasure(typeMirrors.get(0)));
       } else {
         return (TypeElement) typeUtils.asElement(element.asType());

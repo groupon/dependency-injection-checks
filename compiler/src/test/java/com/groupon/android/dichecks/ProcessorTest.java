@@ -16,10 +16,12 @@
 
 package com.groupon.android.dichecks;
 
-import static com.google.common.truth.Truth.assert_;
+import static com.google.common.truth.Truth.assertAbout;
 import static com.google.testing.compile.JavaSourceSubjectFactory.javaSource;
+import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.testing.compile.JavaFileObjects;
 import com.groupon.android.dichecks.processor.DiChecksProcessor;
 import javax.tools.JavaFileObject;
@@ -42,12 +44,9 @@ public class ProcessorTest {
                     "    @Inject InjectedClass aClass;",
                     "}",
                     "class B extends A {}",
-                    "class D extends B {}",
-                    "class C extends A {}",
                     "class InjectedClass {}"));
 
-    assert_()
-        .about(javaSource())
+    assertAbout(javaSource())
         .that(source)
         .processedWith(new DiChecksProcessor())
         .compilesWithoutError();
@@ -70,15 +69,16 @@ public class ProcessorTest {
                     "class B extends A {",
                     "    @Inject InjectedClass aClass;",
                     "}",
-                    "class D extends B {}",
-                    "class C extends A {}",
                     "class InjectedClass {}"));
 
-    assert_()
-        .about(javaSource())
+    assertAbout(javaSource())
         .that(source)
         .processedWith(new DiChecksProcessor())
-        .failsToCompile();
+        .failsToCompile()
+        .withErrorContaining("Duplicate injection found: injected class "
+                                 + "com.groupon.android.dichecks.dummy.InjectedClass in "
+                                 + "com.groupon.android.dichecks.dummy.B also found in "
+                                 + "com.groupon.android.dichecks.dummy.A.");
   }
 
   @Test
@@ -104,16 +104,23 @@ public class ProcessorTest {
 
     final DiChecksProcessor processor = new DiChecksProcessor();
     processor.setDuplicateInjectionInHierarchyFailOnError(false);
-    assert_()
-        .about(javaSource())
+    assertAbout(javaSource())
         .that(source)
         .processedWith(processor)
         .compilesWithoutError();
   }
 
   @Test
-  public void compilationShouldFailIfDuplicateLazyInjectionInSuperClass() {
-    // Lazy injection in the superclass, duplicate regular injection in the subclass.
+  public void compilationShouldFailIfDuplicateToothpickTypeLazyInjectionFound() {
+    final JavaFileObject lazySource =
+        JavaFileObjects.forSourceString(
+            "toothpick.Lazy",
+            Joiner.on('\n')
+                .join(
+                    " package toothpick;",
+                    "import javax.inject.Provider;",
+                    "public interface Lazy<T> extends Provider<T> {}"
+                ));
     final JavaFileObject source =
         JavaFileObjects.forSourceString(
               "com.groupon.android.dichecks.dummy.A",
@@ -122,7 +129,7 @@ public class ProcessorTest {
                       "package com.groupon.android.dichecks.dummy;",
                       "import javax.inject.Inject;",
                       "import javax.inject.Named;",
-                      "import javax.inject.Provider;",
+                      "import toothpick.Lazy;",
                       "public class A {",
                       "    @Inject @Named(\"someNamedString\") String something;",
                       "    @Inject Lazy<InjectedClass> aClass;",
@@ -130,21 +137,29 @@ public class ProcessorTest {
                       "class B extends A {",
                       "    @Inject InjectedClass aClass;",
                       "}",
-                      "class D extends B {}",
-                      "class C extends A {}",
-                      "class InjectedClass {}",
-                      "interface Lazy<T> extends Provider<T> {}"));
+                      "class InjectedClass {}"));
 
-      assert_()
-          .about(javaSource())
-          .that(source)
+    assertAbout(javaSources())
+          .that(ImmutableList.of(source, lazySource))
           .processedWith(new DiChecksProcessor())
-          .failsToCompile();
+          .failsToCompile()
+          .withErrorContaining("Duplicate injection found: injected class "
+                                   + "com.groupon.android.dichecks.dummy.InjectedClass in "
+                                   + "com.groupon.android.dichecks.dummy.B also found in"
+                                   + " com.groupon.android.dichecks.dummy.A.");
   }
 
   @Test
-  public void compilationShouldFailIfDuplicateLazyInSubclass() {
-    // Regular injection in the superclass, duplicate Lazy injection in the subclass.
+  public void compilationShouldFailIfDuplicateDaggerTypeLazyInjectionFound() {
+    final JavaFileObject lazySource =
+        JavaFileObjects.forSourceString(
+            "dagger.Lazy",
+            Joiner.on('\n')
+            .join(
+                " package dagger;",
+                "public interface Lazy<T> { T get(); }"
+            ));
+
     final JavaFileObject source =
         JavaFileObjects.forSourceString(
             "com.groupon.android.dichecks.dummy.A",
@@ -153,60 +168,28 @@ public class ProcessorTest {
                     "package com.groupon.android.dichecks.dummy;",
                     "import javax.inject.Inject;",
                     "import javax.inject.Named;",
-                    "import javax.inject.Provider;",
+                    "import dagger.Lazy;",
                     "public class A {",
                     "    @Inject @Named(\"someNamedString\") String something;",
+                    "    @Inject Lazy<InjectedClass> aClass;",
+                    "}",
+                    "class B extends A {",
                     "    @Inject InjectedClass aClass;",
                     "}",
-                    "class B extends A {",
-                    "    @Inject Lazy<InjectedClass> aClass;",
-                    "}",
-                    "class D extends B {}",
-                    "class C extends A {}",
-                    "class InjectedClass {}",
-                    "interface Lazy<T> extends Provider<T> {}"));
+                    "class InjectedClass {}"));
 
-    assert_()
-        .about(javaSource())
-        .that(source)
+    assertAbout(javaSources())
+        .that(ImmutableList.of(source, lazySource))
         .processedWith(new DiChecksProcessor())
-        .failsToCompile();
+        .failsToCompile()
+        .withErrorContaining("Duplicate injection found: injected class "
+                                 + "com.groupon.android.dichecks.dummy.InjectedClass in "
+                                 + "com.groupon.android.dichecks.dummy.B also found in "
+                                 + "com.groupon.android.dichecks.dummy.A.");
   }
 
   @Test
-  public void compilationShouldFailIfDuplicateLazyInSuperAndSubclass() {
-    // Lazy injection in the superclass and duplicate Lazy injection in the subclass.
-    final JavaFileObject source =
-        JavaFileObjects.forSourceString(
-            "com.groupon.android.dichecks.dummy.A",
-            Joiner.on('\n')
-                .join(
-                    "package com.groupon.android.dichecks.dummy;",
-                    "import javax.inject.Inject;",
-                    "import javax.inject.Named;",
-                    "import javax.inject.Provider;",
-                    "public class A {",
-                    "    @Inject @Named(\"someNamedString\") String something;",
-                    "    @Inject Lazy<InjectedClass> aClass;",
-                    "}",
-                    "class B extends A {",
-                    "    @Inject Lazy<InjectedClass> aClass;",
-                    "}",
-                    "class D extends B {}",
-                    "class C extends A {}",
-                    "class InjectedClass {}",
-                    "interface Lazy<T> extends Provider<T> {}"));
-
-    assert_()
-        .about(javaSource())
-        .that(source)
-        .processedWith(new DiChecksProcessor())
-        .failsToCompile();
-  }
-
-  @Test
-  public void compilationShouldFailDuplicateIfProviderInjected() {
-    // Provider Injection in the superclass and duplicate provider injection in the subclass.
+  public void compilationShouldFailIfDuplicateProviderInjectionFound() {
     final JavaFileObject source =
         JavaFileObjects.forSourceString(
             "com.groupon.android.dichecks.dummy.A",
@@ -219,116 +202,20 @@ public class ProcessorTest {
                     "import com.groupon.android.dichecks.dummy.StringProvider;",
                     "public class A {",
                     "    @Inject @Named(\"someNamedString\") String something;",
-                    "    @Inject StringProvider stringProvider;",
+                    "    @Inject StringProvider<String> stringProvider;",
                     "}",
                     "class B extends A {",
-                    "    @Inject StringProvider stringProvider;",
+                    "    @Inject StringProvider<String> stringProvider;",
                     "}",
-                    "class D extends B {}",
-                    "class C extends A {}",
-                    "class InjectedClass {}",
-                    "class StringProvider extends Provider<String> {}"));
+                    "class StringProvider<String> implements Provider {}"));
 
-    assert_()
-        .about(javaSource())
+    assertAbout(javaSource())
         .that(source)
         .processedWith(new DiChecksProcessor())
-        .failsToCompile();
-  }
-
-  @Test
-  public void compilationShouldFailDuplicateIfLazyProviderInjectedInSuperClass() {
-    // Lazy provider injection in the superclass and duplicate regular provider injection in the subclass.
-    final JavaFileObject source =
-        JavaFileObjects.forSourceString(
-            "com.groupon.android.dichecks.dummy.A",
-            Joiner.on('\n')
-                .join(
-                    "package com.groupon.android.dichecks.dummy;",
-                    "import javax.inject.Inject;",
-                    "import javax.inject.Named;",
-                    "import javax.inject.Provider;",
-                    "import com.groupon.android.dichecks.dummy.StringProvider;",
-                    "public class A {",
-                    "    @Inject @Named(\"someNamedString\") String something;",
-                    "    @Inject Lazy<StringProvider> stringProvider;",
-                    "}",
-                    "class B extends A {",
-                    "    @Inject StringProvider stringProvider;",
-                    "}",
-                    "class D extends B {}",
-                    "class C extends A {}",
-                    "class InjectedClass {}",
-                    "class StringProvider extends Provider<String> {}"));
-
-    assert_()
-        .about(javaSource())
-        .that(source)
-        .processedWith(new DiChecksProcessor())
-        .failsToCompile();
-  }
-
-  @Test
-  public void compilationShouldFailDuplicateIfLazyProviderInjectedInSubClass() {
-    // Provider Injection in the superclass and duplicate lazy provider injection in the subclass.
-    final JavaFileObject source =
-        JavaFileObjects.forSourceString(
-            "com.groupon.android.dichecks.dummy.A",
-            Joiner.on('\n')
-                .join(
-                    "package com.groupon.android.dichecks.dummy;",
-                    "import javax.inject.Inject;",
-                    "import javax.inject.Named;",
-                    "import javax.inject.Provider;",
-                    "import com.groupon.android.dichecks.dummy.StringProvider;",
-                    "public class A {",
-                    "    @Inject @Named(\"someNamedString\") String something;",
-                    "    @Inject StringProvider stringProvider;",
-                    "}",
-                    "class B extends A {",
-                    "    @Inject Lazy<StringProvider> stringProvider;",
-                    "}",
-                    "class D extends B {}",
-                    "class C extends A {}",
-                    "class InjectedClass {}",
-                    "class StringProvider extends Provider<String> {}"));
-
-    assert_()
-        .about(javaSource())
-        .that(source)
-        .processedWith(new DiChecksProcessor())
-        .failsToCompile();
-  }
-
-  @Test
-  public void compilationShouldFailDuplicateIfLazyProviderInjectedInSuperClassAndSubClass() {
-    // Lazy Provider in the superclass and duplicate lazy provider injection in the subclass.
-    final JavaFileObject source =
-        JavaFileObjects.forSourceString(
-            "com.groupon.android.dichecks.dummy.A",
-            Joiner.on('\n')
-                .join(
-                    "package com.groupon.android.dichecks.dummy;",
-                    "import javax.inject.Inject;",
-                    "import javax.inject.Named;",
-                    "import javax.inject.Provider;",
-                    "import com.groupon.android.dichecks.dummy.StringProvider;",
-                    "public class A {",
-                    "    @Inject @Named(\"someNamedString\") String something;",
-                    "    @Inject Lazy<StringProvider> stringProvider;",
-                    "}",
-                    "class B extends A {",
-                    "    @Inject Lazy<StringProvider> stringProvider;",
-                    "}",
-                    "class D extends B {}",
-                    "class C extends A {}",
-                    "class InjectedClass {}",
-                    "class StringProvider extends Provider<String> {}"));
-
-    assert_()
-        .about(javaSource())
-        .that(source)
-        .processedWith(new DiChecksProcessor())
-        .failsToCompile();
+        .failsToCompile()
+        .withErrorContaining("Duplicate injection found: injected class "
+                                 + "com.groupon.android.dichecks.dummy.StringProvider<java.lang.String> in "
+                                 + "com.groupon.android.dichecks.dummy.B also found in "
+                                 + "com.groupon.android.dichecks.dummy.A.");
   }
 }
