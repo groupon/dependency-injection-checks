@@ -16,12 +16,6 @@
 
 package com.groupon.android.dichecks.processor;
 
-import static com.groupon.android.dichecks.processor.CompilerOptions.DUPLICATE_INJECTION_IN_HIERARCHY_ENABLED;
-import static com.groupon.android.dichecks.processor.CompilerOptions.DUPLICATE_INJECTION_IN_HIERARCHY_FAIL_ON_ERROR;
-import static com.groupon.android.dichecks.processor.CompilerOptions.FORBIDDEN_CLASSES_CLASSLIST;
-import static com.groupon.android.dichecks.processor.CompilerOptions.FORBIDDEN_CLASSES_ENABLED;
-import static com.groupon.android.dichecks.processor.CompilerOptions.FORBIDDEN_CLASSES_FAIL_ON_ERROR;
-
 import com.google.auto.service.AutoService;
 import com.groupon.android.dichecks.checks.common.DICheck;
 import com.groupon.android.dichecks.checks.common.DICheckIssue;
@@ -42,6 +36,14 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
+
+import static com.groupon.android.dichecks.processor.CompilerOptions.DUPLICATE_CHECK;
+import static com.groupon.android.dichecks.processor.CompilerOptions.DUPLICATE_INJECTION_IN_HIERARCHY_ENABLED;
+import static com.groupon.android.dichecks.processor.CompilerOptions.DUPLICATE_INJECTION_IN_HIERARCHY_FAIL_ON_ERROR;
+import static com.groupon.android.dichecks.processor.CompilerOptions.FORBIDDEN_CLASSES_CLASSLIST;
+import static com.groupon.android.dichecks.processor.CompilerOptions.FORBIDDEN_CLASSES_ENABLED;
+import static com.groupon.android.dichecks.processor.CompilerOptions.FORBIDDEN_CLASSES_FAIL_ON_ERROR;
+import static com.groupon.android.dichecks.processor.CompilerOptions.OPTIONS_PREFIX;
 
 /** Main entry class of the annotation processor used in dependency injection checks */
 @AutoService(Processor.class)
@@ -89,6 +91,7 @@ public class DiChecksProcessor extends AbstractProcessor {
     final List<DICheckIssue> issuesFound = new ArrayList<>();
 
     for (DICheck check : checks) {
+      // filter suppressed elements
       check.addInjectedElements(injectedFields);
       issuesFound.addAll(check.processInjectedElements());
     }
@@ -112,7 +115,8 @@ public class DiChecksProcessor extends AbstractProcessor {
     if (duplicateInjectionInHierarchyEnabled) {
       checks.add(
           new DuplicateInjectionInHierarchyCheck(
-              processingEnv, duplicateInjectionInHierarchyFailOnError));
+              processingEnv, duplicateInjectionInHierarchyFailOnError,
+                  OPTIONS_PREFIX + DUPLICATE_CHECK));
     }
 
     return checks;

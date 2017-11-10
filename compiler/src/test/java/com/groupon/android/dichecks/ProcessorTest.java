@@ -23,6 +23,7 @@ import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.testing.compile.JavaFileObjects;
+import com.groupon.android.dichecks.processor.CompilerOptions;
 import com.groupon.android.dichecks.processor.DiChecksProcessor;
 import javax.tools.JavaFileObject;
 import org.junit.Test;
@@ -312,5 +313,55 @@ public class ProcessorTest {
           .that(ImmutableList.of(source, lazySource))
           .processedWith(new DiChecksProcessor())
           .compilesWithoutError();
+  }
+
+  @Test
+  public void compilationShoulNotFailIfDuplicateFoundAndSupressed() {
+    final JavaFileObject source =
+            JavaFileObjects.forSourceString(
+                    "com.groupon.android.dichecks.dummy.A",
+                    Joiner.on('\n')
+                            .join(
+                                    "package com.groupon.android.dichecks.dummy;",
+                                    "import javax.inject.Inject;",
+                                    "import javax.inject.Named;",
+                                    "public class A {",
+                                    "    @Inject @Named(\"someNamedString\") String something;",
+                                    "    @Inject InjectedClass aClass;",
+                                    "}",
+                                    "class B extends A {",
+                                    "    @SuppressWarnings(\"" + CompilerOptions.OPTIONS_PREFIX + CompilerOptions.DUPLICATE_CHECK + "\")",
+                                    "    @Inject InjectedClass aClass;",
+                                    "}",
+                                    "class D extends B {}",
+                                    "class C extends A {}",
+                                    "class InjectedClass {}"));
+
+    assertAbout(javaSource()).that(source).processedWith(new DiChecksProcessor()).compilesWithoutError();
+  }
+
+  @Test
+  public void compilationShoulFailIfDuplicateFoundAndSupressedWithOtherSuppress() {
+    final JavaFileObject source =
+            JavaFileObjects.forSourceString(
+                    "com.groupon.android.dichecks.dummy.A",
+                    Joiner.on('\n')
+                            .join(
+                                    "package com.groupon.android.dichecks.dummy;",
+                                    "import javax.inject.Inject;",
+                                    "import javax.inject.Named;",
+                                    "public class A {",
+                                    "    @Inject @Named(\"someNamedString\") String something;",
+                                    "    @Inject InjectedClass aClass;",
+                                    "}",
+                                    "class B extends A {",
+                                    "    @SuppressWarnings(\"someRandomStringProbablyNotARealSuppressStatement\")",
+                                    "    @Inject InjectedClass aClass;",
+                                    "}",
+                                    "class D extends B {}",
+                                    "class C extends A {}",
+                                    "class InjectedClass {}"));
+
+    assertAbout(javaSource()).that(source).processedWith(new DiChecksProcessor()).failsToCompile();
   }
 }

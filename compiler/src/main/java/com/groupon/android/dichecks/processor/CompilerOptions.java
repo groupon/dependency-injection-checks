@@ -20,11 +20,12 @@ package com.groupon.android.dichecks.processor;
 //This design doesn't scale but we don't expect much more than a few checks, if that changes we should consider other implementations.
 public interface CompilerOptions {
   String OPTIONS_PREFIX = "com.groupon.android.dichecks.";
+  String DUPLICATE_CHECK = "duplicateCheck";
   /** Enables/Disables the duplicate check. */
-  String DUPLICATE_INJECTION_IN_HIERARCHY_ENABLED = OPTIONS_PREFIX + "duplicateCheck.enabled";
+  String DUPLICATE_INJECTION_IN_HIERARCHY_ENABLED = OPTIONS_PREFIX + DUPLICATE_CHECK + ".enabled";
   /** Whether or not the duplicate check fails the builds when an issue is detected. */
   String DUPLICATE_INJECTION_IN_HIERARCHY_FAIL_ON_ERROR =
-      OPTIONS_PREFIX + "duplicateCheck.failOnError";
+      OPTIONS_PREFIX + DUPLICATE_CHECK + ".failOnError";
 
   /** Enables/Disables the forbidden classes check. */
   String FORBIDDEN_CLASSES_ENABLED = OPTIONS_PREFIX + "forbiddenInjectClassesCheck.enabled";

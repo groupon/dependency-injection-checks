@@ -1,5 +1,6 @@
 ### version 1.0.3 (TBD)
-
+* suppress mechanism for Duplicate detection using @SuppressWarnings
+* Check Duplicates for Lazy and Provider
 
 ### version 1.0.2
 

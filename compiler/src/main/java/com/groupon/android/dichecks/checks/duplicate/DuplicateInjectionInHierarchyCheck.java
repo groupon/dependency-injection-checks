@@ -22,6 +22,7 @@ import static javax.tools.Diagnostic.Kind.WARNING;
 import com.groupon.android.dichecks.checks.common.DICheck;
 import com.groupon.android.dichecks.checks.common.DICheckIssue;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -63,25 +64,36 @@ public class DuplicateInjectionInHierarchyCheck implements DICheck {
   private final Types typeUtils;
 
   private boolean failOnError;
+  private String issueName;
 
   public DuplicateInjectionInHierarchyCheck(
-      ProcessingEnvironment processingEnv, boolean failOnError) {
+      ProcessingEnvironment processingEnv, boolean failOnError, String issueName) {
     this.failOnError = failOnError;
     typeUtils = processingEnv.getTypeUtils();
     elementUtils = processingEnv.getElementUtils();
+    this.issueName = issueName;
   }
 
   @Override
   public void addInjectedElements(Set<? extends Element> injectedElements) {
     for (Element injectedElement : injectedElements) {
-      if (isLazy(injectedElement)) {
-        getKindParameterAndAddInjectionDefinition(injectedElement, false);
-      } else if (isProvider(injectedElement)) {
-        getKindParameterAndAddInjectionDefinition(injectedElement, true);
-      } else {
-        addInjectionDefinition(new InjectionDefinition(injectedElement), injectedElement);
-      }
+        if (!isElementSuppressed(injectedElement)) {
+            if (isLazy(injectedElement)) {
+                getKindParameterAndAddInjectionDefinition(injectedElement, false);
+            } else if (isProvider(injectedElement)) {
+                getKindParameterAndAddInjectionDefinition(injectedElement, true);
+            } else {
+                addInjectionDefinition(new InjectionDefinition(injectedElement), injectedElement);
+            }
+        }
     }
+  }
+
+  private boolean isElementSuppressed(Element injectedElement) {
+    final SuppressWarnings suppressAnnotation =
+        injectedElement.getAnnotation(SuppressWarnings.class);
+    return suppressAnnotation != null
+        && Arrays.asList(suppressAnnotation.value()).contains(issueName);
   }
 
   /**
