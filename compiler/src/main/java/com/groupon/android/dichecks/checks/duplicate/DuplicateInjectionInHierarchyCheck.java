@@ -41,7 +41,18 @@ import javax.lang.model.util.Types;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/** Use this to detect duplicate injections in the class hierarchy. */
+/**
+ * Use this to detect duplicate injections in the class hierarchy for <strong>direct
+ * injection</strong>, <strong>provider injection</strong> and <strong>lazy injection</strong>. <br>
+ * All the three injections described above have subtle differences and we try to handle them:
+ *
+ * <ul>
+ *   <li>Direct Injection: The target is created <i>before</i> it is required.
+ *   <li>Provider Injection: A new target is created each time {@code Provider.get()} is called.
+ *   <li>Lazy Injection: The target is created just before it is needed. The same target is returned
+ *       for all subsequent uses.
+ * </ul>
+ */
 public class DuplicateInjectionInHierarchyCheck implements DICheck {
 
   private static final String LAZY_CLASS_NAME = "Lazy";
@@ -63,11 +74,10 @@ public class DuplicateInjectionInHierarchyCheck implements DICheck {
   @Override
   public void addInjectedElements(Set<? extends Element> injectedElements) {
     for (Element injectedElement : injectedElements) {
-      if (isProvider(injectedElement) || isLazy(injectedElement)) {
-        final TypeElement typeElement = getKindParameter(injectedElement);
-        if (typeElement != null) {
-          addInjectionDefinition(new InjectionDefinition(typeElement), injectedElement);
-        }
+      if (isLazy(injectedElement)) {
+        getKindParameterAndAddInjectionDefinition(injectedElement, false);
+      } else if (isProvider(injectedElement)) {
+        getKindParameterAndAddInjectionDefinition(injectedElement, true);
       } else {
         addInjectionDefinition(new InjectionDefinition(injectedElement), injectedElement);
       }
@@ -144,6 +154,20 @@ public class DuplicateInjectionInHierarchyCheck implements DICheck {
   }
 
   /**
+   * Determine the type and add injection definition for Provider or Lazy.
+   *
+   * @param injectedElement
+   * @param isProvider
+   */
+  private void getKindParameterAndAddInjectionDefinition(
+      Element injectedElement, boolean isProvider) {
+    final TypeElement typeElement = getKindParameter(injectedElement);
+    if (typeElement != null) {
+      addInjectionDefinition(new InjectionDefinition(typeElement, isProvider), injectedElement);
+    }
+  }
+
+  /**
    * Tests whether one type is a subtype of another. Any type is considered to be a subtype of
    * itself.
    *
@@ -160,6 +184,13 @@ public class DuplicateInjectionInHierarchyCheck implements DICheck {
         element.asType(), elementUtils.getTypeElement(Provider.class.getCanonicalName()).asType());
   }
 
+  /**
+   * This method checks if the type is Lazy. Some DI frameworks may not be extending {@link
+   * Provider}, ex: Dagger, and so we make a string comparision of "Lazy" with the class name.
+   *
+   * @param element
+   * @return true if "Lazy".equals(className), false otherwise
+   */
   private boolean isLazy(Element element) {
     final TypeMirror type = element.asType();
     if (type.getKind() == TypeKind.DECLARED) {
@@ -170,11 +201,11 @@ public class DuplicateInjectionInHierarchyCheck implements DICheck {
   }
 
   /**
-   * Determine and return the type of the element.
+   * Return the type parameter of a class that extends {@code Lazy} or {@code Provider}.
    *
    * <ul>
-   *   <li>Return erasure type Foo for, Lazy&lt;Foo&gt;.
-   *   <li>Return FooProvider if no erasure type.
+   *   <li>Return parameter type Foo for, Lazy&lt;Foo&gt;.
+   *   <li>Return FooProvider if no parameter type.
    *   <li>Return null, if we are unable to determine any type/kind of element.
    * </ul>
    *
@@ -200,11 +231,17 @@ public class DuplicateInjectionInHierarchyCheck implements DICheck {
 
     private final String injectionType;
     private final String named;
+    private final boolean isProvider;
 
-    public InjectionDefinition(@NotNull Element element) {
+    public InjectionDefinition(@NotNull Element element, boolean isProvider) {
       injectionType = element.asType().toString();
       final Named named = element.getAnnotation(Named.class);
       this.named = (named != null) ? named.value() : null;
+      this.isProvider = isProvider;
+    }
+
+    public InjectionDefinition(@NotNull Element element) {
+      this(element, false);
     }
 
     @Override
@@ -214,12 +251,16 @@ public class DuplicateInjectionInHierarchyCheck implements DICheck {
       }
       final InjectionDefinition other = (InjectionDefinition) obj;
       return injectionType.equals(other.injectionType)
-          && (named == null && other.named == null || named != null && named.equals(other.named));
+          && (named == null && other.named == null || named != null && named.equals(other.named))
+          && (isProvider == other.isProvider);
     }
 
     @Override
     public int hashCode() {
-      return injectionType.hashCode() * 31 + (named != null ? named.hashCode() : 0);
+      int result = injectionType.hashCode();
+      result = 31 * result + (named != null ? named.hashCode() : 0);
+      result = 31 * result + (isProvider ? 1 : 0);
+      return result;
     }
 
     @Override
