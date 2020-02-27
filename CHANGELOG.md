@@ -1,3 +1,7 @@
+### Version 1.0.4 (Feb 27, 2018)
+
+* Added incremental compilation support
+
 ### version 1.0.3 (Jan 4th, 2018)
 
 * suppress mechanism for Duplicate detection using @SuppressWarnings
